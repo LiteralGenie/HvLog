@@ -9,3 +9,4 @@ CONFIG_DIR= PROJ_DIR + "config" + sep
 LOG_DIR= PROJ_DIR + "logs" + sep
 
 LOGGING_CONFIG= CONFIG_DIR + "logging.yaml"
+CONFIG_FILE= CONFIG_DIR + "config.yaml"

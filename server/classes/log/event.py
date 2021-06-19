@@ -1,4 +1,5 @@
-import copy, re
+import ujson
+from typing import List
 
 
 # @todo: event time, round, action tags
@@ -7,9 +8,11 @@ import copy, re
 #       - eg a "Spell X hits Monster Y for Z damage" has a source event of "You cast Spell X"
 #       - player attacks / monster spawns / etc are considered events without a source event
 class Event:
+    SERIAL_ATTRS= ['name', 'tags', 'data', 'turn_index', 'round_index']
+
     def __init__(self, name=None, source=None, data=None, tags=None):
         self.source= source
-        self.effects= []
+        self.effects :List[Event] = []
 
         self.name= name
         self.tags= tags if isinstance(tags, list) else [tags]
@@ -22,3 +25,16 @@ class Event:
         t= self.tags[:3]
         t[-1]= "..." if len(self.tags) > 3 else t[-1]
         return f"{self.name} ({self.round_index}.{self.turn_index}) [{','.join(t)}]"
+
+    def as_dict(self):
+        ret= dict()
+        for x in self.SERIAL_ATTRS:
+            ret[x]= getattr(self, x)
+
+        ret['effects']= [x.as_dict() for x in self.effects]
+        return ret
+
+    def serialize(self):
+        ret= self.as_dict()
+        ret= ujson.dumps(ret)
+        return ret

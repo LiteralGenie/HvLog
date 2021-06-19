@@ -17,10 +17,11 @@ class EventParser:
     
     # create instance from text
     @classmethod
-    def create_events(cls, text):
+    def get_event(cls, text):
         for p in cls.PARSERS:
             if event := p.parse(text):
-                return event if isinstance(event, list) else [event]
+            #     return event if isinstance(event, list) else [event]
+                return event
         raise ValueError(text)
 
 # creates event from regex(s)
@@ -221,11 +222,11 @@ SimpleParser([P['enemy_debuff'], P['enemy_resist']],
              tags=['Player', 'Debuff'])
 
 ### game infos...
-SimpleParser(P['victory'],
+SimpleParser(P['round_end'],
              name='Round End',
              tags=['Game'])
 
-SimpleParser(P['round_init'],
+SimpleParser(P['round_start'],
              name="Round Start",
              tags=['Game'])
 

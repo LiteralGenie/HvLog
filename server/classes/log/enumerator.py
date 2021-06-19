@@ -10,7 +10,7 @@ class Enumerator:
         round_index= -1
         for e in events:
             if 'Round Start' == e.name:
-                round_index= e.data['current']
+                round_index= int(e.data['current'])
             e.round_index= round_index
 
         return events

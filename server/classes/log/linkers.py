@@ -39,7 +39,7 @@ class EventLinker:
         # each clump is first scanned for sources, then effects --- because same-turn source / effects may be out-of-order
         ts= utils.Timestamp()
         while e_ind < len(events):
-            ts.log(f'linking -- {e_ind:05} / {len(events):05}...')
+            # ts.log(f'linking -- {e_ind:05} / {len(events):05}...')
 
             # inits
             t_ind= events[e_ind].turn_index

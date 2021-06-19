@@ -63,12 +63,11 @@ def load_yaml(path, default=None, as_dict=False):
     else:
         raise Exception(f"No default supplied and file does not exist: {path}")
 
-# use safe to get a python dictionary rather than weird dictionary wrapper
-def load_yaml_from_string(x, safe=True):
-    if safe:
-        tmp= YAML(typ='safe')
-        return tmp.load(x)
-    return yaml.load(x)
+def load_yaml_from_string(x, as_dict=False):
+    loader= yaml
+    if as_dict:
+        loader= YAML(typ='safe')
+    return loader.load(x)
 
 def dump_yaml(data, path):
     make_dirs(path)

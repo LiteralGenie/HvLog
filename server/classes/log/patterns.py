@@ -48,8 +48,8 @@ PATTERNS= dict(
 
 
     # info
-    victory= rf"You are Victorious!",
-    round_init= rf"Initializing {_words('battle_type')} \(Round {_num('current')} / {_num('max')}\) \.\.\.",
+    round_end= rf"You are Victorious!",
+    round_start= rf"Initializing {_words('battle_type')} \(Round {_num('current')} / {_num('max')}\) \.\.\.",
 
     spawn= rf"Spawned Monster (?P<letter>[A-Z]): MID={_num('mid')} \({_words('monster')}\) LV={_num('level')} HP={_num('hp')}",
     death= rf"{_words('monster')} has been defeated\.",
