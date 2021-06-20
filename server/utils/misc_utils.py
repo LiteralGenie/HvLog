@@ -6,7 +6,6 @@ from ruamel.yaml import YAML
 yaml= YAML()
 yaml.preserve_quotes= True
 
-
 def configure_logging():
     import logging.config
     make_dirs(global_utils.LOG_DIR)
@@ -116,6 +115,10 @@ class Timestamp:
             msg = msg.replace("\n", "\\n")
         print(f"\r{self.time(True)} {msg}", end="")
 
+    def log_end(self, msg):
+        return self.log(msg + "\n", escape=False)
+
+    # multi-line log message (all lines indented, with first having the timestamp)
     def log_line(self, msg, escape=False, prefix_length=7):
         if escape:
             msg = msg.replace("\n", "\\n")

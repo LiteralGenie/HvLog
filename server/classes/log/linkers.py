@@ -13,8 +13,8 @@ class EventLinker:
     LINKERS :List[EventLinker] = []
 
     def __init__(self, max_duration=-1):
-        self.id= self._ID
-        self.__class__._ID+= 1
+        self.id= EventLinker._ID
+        EventLinker._ID+= 1
         self.max_duration= max_duration
 
     def check_source(self, event) -> bool:
@@ -45,7 +45,7 @@ class EventLinker:
             t_ind= events[e_ind].turn_index
             turn_events= list(itertools.takewhile(lambda x: x.turn_index == t_ind,
                                                   events[e_ind:]))
-            e_ind+= 1 + len(turn_events)
+            e_ind+= len(turn_events)
 
             # ...
             current_sources= cls._prune_expired(current_sources, t_ind)
@@ -194,6 +194,8 @@ class SimpleNameLinker(SimpleLinker):
         self.source_cond.set("name", lambda name: name in source_names)
         self.effect_cond.set("name", lambda name,_: name in effect_names)
 
+        self.names= [source_names, effect_names]
+
 
 
 SimpleNameLinker("Riddle Answer", "Riddle Restore")
@@ -233,6 +235,11 @@ victory= SimpleLinker(max_duration=0)
 victory.source_cond.set("name", "Round End")
 victory.effect_cond.set("tags", lambda tags,_: "Drop" in tags)
 
+# channeling
+chan= SimpleLinker(max_duration=0)
+chan.source_cond.set("tags", lambda tags: all(x in tags for x in ["Player", "Skill Cast"]))
+chan.effect_cond.set("name", "Channeling")
+
 
 # status effects
 status_effect= SimpleLinker(max_duration=0)
@@ -254,6 +261,7 @@ def tmp(event):
     is_basic= event.name == "Player Attack"
     return is_skill or is_basic
 coal.full_source_check= tmp
+
 
 # buffs with same name as their effect (eg regen, arcane focus)
 pl_buffs= SimpleLinker(max_duration=0)

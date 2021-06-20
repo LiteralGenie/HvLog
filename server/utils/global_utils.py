@@ -10,3 +10,5 @@ LOG_DIR= PROJ_DIR + "logs" + sep
 
 LOGGING_CONFIG= CONFIG_DIR + "logging.yaml"
 CONFIG_FILE= CONFIG_DIR + "config.yaml"
+# DATABASE_FILE= DATA_DIR + "db.fs"
+DATABASE_FILE= PROJ_DIR + 'scratch/db_data/test_db_1.fs'

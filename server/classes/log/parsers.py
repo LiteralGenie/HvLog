@@ -22,7 +22,10 @@ class EventParser:
             if event := p.parse(text):
             #     return event if isinstance(event, list) else [event]
                 return event
-        raise ValueError(text)
+        raise ParseError(text)
+
+class ParseError(Exception):
+    pass
 
 # creates event from regex(s)
 # if a name is not supplied in __init__, a capture group named 'name' must be present in the regex
@@ -111,22 +114,17 @@ class SimpleParser(EventParser):
     def auto_convert(self, ctx, data):
         def try_(fn, val):
             try:
-                fn(val)
-                return 1,val
+                return fn(val)
             except:
-                return 0,None
+                return None
 
+        # try until successful conversion (ie not-none)
         def infer(val):
-            results= [try_(c,val) for c in self.AUTO_CVTS]
-            total= sum(x[0] for x in results)
-            successes= (x[1] for x in results if x[0])
-
-            if total == 0:
-                return None
-            elif total == 1:
-                return next(successes)
-            else:
-                return None
+            results= (try_(c,val) for c in self.AUTO_CVTS)
+            for x in results:
+                if x is not None:
+                    return x
+            return None
 
         for x,y in data.items():
             if (result:=infer(y)) is not None:
@@ -143,9 +141,10 @@ SimpleParser([P['riddle_success'],P['riddle_fail']],
              value=0)
 
 # player basic attacks
-SimpleParser(P['player_basic'],
+SimpleParser([P['player_basic'], P['player_miss']],
+             tags=['Player', 'Attack'],
              name='Player Attack',
-             tags=['Player', 'Attack'])
+             value=0, damage_type="")
 
 # player item uses
 SimpleParser(P['player_item'],
@@ -220,6 +219,8 @@ SimpleParser(P['buff_expire'],
 SimpleParser([P['enemy_debuff'], P['enemy_resist']],
              name='UNKNOWN', # if resisted, the effect name is omitted in log
              tags=['Player', 'Debuff'])
+SimpleParser(P['debuff_expire'],
+             tags=['Monster', 'Debuff Expire'])
 
 ### game infos...
 SimpleParser(P['round_end'],
@@ -246,6 +247,15 @@ SimpleParser(P['credits'],
              tags=['Game', 'Drop'])
 SimpleParser(P['drop'],
              name='Item Drop',
+             tags=['Game', 'Drop'])
+SimpleParser(P['event'],
+             name='Event Drop',
+             tags=['Game', 'Drop'])
+SimpleParser(P['clear_bonus'],
+             name='Clear Bonus',
+             tags=['Game', 'Drop'])
+SimpleParser(P['token_bonus'],
+             name='Token Bonus',
              tags=['Game', 'Drop'])
 SimpleParser(P['prof'],
              name='Prof Gain',
