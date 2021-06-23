@@ -8,10 +8,11 @@ class Enumerator:
     @classmethod
     def _enumerate_rounds(cls, events):
         round_index= -1
-        for e in events:
+        for i,e in enumerate(events):
             if 'Round Start' == e.name:
                 round_index= int(e.data['current'])
             e.round_index= round_index
+            e.event_index= i
 
         return events
 

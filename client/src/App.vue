@@ -1,14 +1,14 @@
 <template>
-    <summary_tab/>
+    <test/>
 </template>
 
 <script>
-import summary_tab from './components/summary_tab.vue'
+import test from './components/_test.vue'
 
 export default {
     name: 'App',
     components: {
-        summary_tab
+        test
     }
 }
 </script>

@@ -130,7 +130,7 @@ class BattleLog(Persistent):
         tags= [to_re(x) for x in (tags or [])]
 
         for e in self.primary_events:
-            ret+= self._search(e, name, tags, **kwargs)
+            ret+= self._search_event(e, name, tags, **kwargs)
         return ret
 
     @classmethod
@@ -139,7 +139,7 @@ class BattleLog(Persistent):
         # type: (Event, re.Pattern, List[re.Pattern], bool, bool, bool) -> List[Event]
 
         def match_any(patt, lst):
-            return any(patt.search(x) for x in lst)
+            return any(patt.search(str(x)) for x in lst)
 
         # inits
         ret= []

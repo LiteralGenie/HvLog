@@ -1,12 +1,5 @@
 <template>
-    <div>
-        <div class="title"></div>
-        <div class="content">
-            <div v-for="(e,i) in events" :key="i">
-                {{e}}
-            </div>
-        </div>
-    </div>
+    <button @click="get_filtered">test</button>
 </template>
 
 
@@ -14,25 +7,25 @@
 <script>
 export default {
     name: 'summary_tab',
-    data() { console.log('data');return {
+    data() { return {
         events: [],
     }},
 
-    created() {
-        this.events= [1,2,3]
-        console.log("Starting connection.", this)
-        this.connection = new WebSocket("ws://localhost:8202/test")
-
-        this.connection.onmessage = function(msg) {
-            this.events= JSON.parse(msg.data)
-            console.log('Got message.', this, this.events)
-        }.bind(this)
-
-        this.connection.onopen = function(msg) {
-              console.log(msg)
-              console.log("Connected.")
+    methods: {
+        async get_filtered () {
+            let data= await this.$http.post(
+                '/filter_tr', {
+                    kwargs: JSON.stringify({
+                        recency: 180*86400,
+                        filters: ['completed'],
+                        extractors: ['credits'],
+                    })
+                }
+            )
+            console.log('got', data)
+            return data
         }
-    },
+    }
 }
 //<div class="key">{{d['key']}}</div>
 //            <div class="value">{{d['value']}}</div>

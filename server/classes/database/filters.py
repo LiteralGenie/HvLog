@@ -1,15 +1,15 @@
-import re
 from typing import List
 from persistent import Persistent
 from BTrees.IOBTree import IOBTree, BTree
 from ..log import BattleLog
+import re, time
 
 
 # filters a list of logs based on some log value (possibly based on Index) @todo
 # results are cached and then updated if new logs exist when filter is applied
 class Filter(Persistent):
-    def __init__(self, name):
-        self.name= name
+    def __init__(self, name=None):
+        self.name= name or str(time.time()) # for debugging
         self.log_lst= IOBTree()  # filter result cache (log_id : bool)
 
     def filter(self, log: BattleLog) -> bool:
@@ -30,6 +30,18 @@ class Filter(Persistent):
                 ret.append(l)
 
         return ret
+
+    def clear_cache(self):
+        import transaction
+        self.log_lst= IOBTree()
+        transaction.commit()
+
+    @classmethod
+    def clear_all_caches(cls, node):
+        import transaction
+        for name,filter in node.items():
+            filter.clear_cache()
+        transaction.commit()
 
 class TypeFilter(Filter):
     def __init__(self, regex, flags=re.IGNORECASE, **kwargs):
@@ -56,7 +68,7 @@ class RangeFilter(Filter):
         val= self.get_val(log)
         return self.min <= val <= (self.max or float('inf'))
 
-# checks round number against a min and max (both inclusive)
+# checks round number (ending or max) against a min and max (both inclusive)
 class RoundFilter(RangeFilter):
     def __init__(self, check_max=False, **kwargs):
         super().__init__(**kwargs)
@@ -67,6 +79,10 @@ class RoundFilter(RangeFilter):
             return log.round_max
         else:
             return log.round_end
+
+class CompletedFilter(Filter):
+    def filter(self, log: BattleLog) -> bool:
+        return 0 == (log.round_end - log.round_max)
 
 class StartFilter(RangeFilter):
     def __init__(self, start_time, **kwargs):
@@ -95,7 +111,10 @@ DEFAULT_FILTERS= dict(
     arena= TypeFilter(name="Arena", regex="arena challenge"),
     item_world= TypeFilter(name="Item World", regex="item world"),
     random_encounter= TypeFilter(name="Random Encounter", regex="random encounter"),
+    completed= CompletedFilter(name="Completed")
 )
 
 
 # @todo: tests
+# @todo: refactor cache into superclass and share with extractor
+# @todo: add last_checked for cache

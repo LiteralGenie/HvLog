@@ -1,6 +1,7 @@
-import random, time
+from utils import server_utils
 from tornado.websocket import WebSocketHandler
 from tornado.web import RequestHandler
+import random, ujson
 
 
 class CorsMixin:
@@ -25,29 +26,27 @@ def test_log_route(root):
     return TestRequest
 
 # expected POST kwargs:
-#   recency: int    -- results will be no older than this value, mark negative to allow all results
+#   age: int        -- logs used for result will be no older than this value, mark negative to allow all results
 #   filters: [str]  -- names of filters to apply
 #   indexes: [str]  -- names of indexers to use for response
 # @todo: handle bad request
-# @todo: indexers
-def test_request_route(root):
+# @todo: compression
+def extract_test_route(root):
     class RequestTest(RequestHandler):
         async def get(self):
             return self.post()
 
         async def post(self):
-            recency= self.get_body_argument('recency')
-            logs= root['logs'].values(min=recency)
-            print('num logs filtered', len(logs))
+            # if the POST data isnt form-encoded, body_arguments is empty and body is bytes, so don't use get_body_arguments
+            body= ujson.loads(self.request.body.decode('utf-8'))
+            kwargs= ujson.loads(body['kwargs'])
+            print('extract test:', kwargs)
 
-        @classmethod
-        def get_response(cls, recency=0, filters=None, indexers=None):
-            filters= filters or []
-            indexers= indexers or []
+            resp_dict= server_utils.get_extract(root, **kwargs)
+            resp= ujson.dumps(resp_dict)
 
-            filters= [root['filters'][x.lower()] for x in filters]
-            start= time.time() - recency
 
-            ret= root['logs'].values(min=start)
-            for f in filters:
-                ret= f.filter_logs(ret)
+            self.write(resp)
+            # print('wrote', resp_dict)
+
+    return RequestTest

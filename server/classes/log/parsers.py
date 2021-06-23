@@ -40,8 +40,8 @@ class SimpleParser(EventParser):
 
         self.infer_types= infer_types
         self.key_map= key_map or dict() # swap around data keys
-        self.proc_cbs= {} # alters value for a data entry given (ctx,data)
-        self.converters= {} # converts value for a data entry given to new value and / or type
+        self.proc_cbs= {} # callbacks after regex
+        self.converters= {} # callbacks for type conversions
 
         self.default_data= kwargs
 
@@ -132,6 +132,7 @@ class SimpleParser(EventParser):
 
         return data
 
+
 # @todo: refactor to config file
 
 # riddlemaster answers
@@ -162,6 +163,7 @@ SimpleParser([P['enemy_basic'], P['player_dodge']],
 
 # enemy skills
 SimpleParser([P['enemy_skill_absorb'], P['enemy_skill_miss'], P['enemy_skill_success']],
+             name="Monster Spell",
              tags=['Monster', 'Skill Cast', 'Skill Damage'],
              value=0)
 
@@ -217,7 +219,7 @@ SimpleParser(P['buff_expire'],
 
 # enemy resist (for debuffs)
 SimpleParser([P['enemy_debuff'], P['enemy_resist']],
-             name='UNKNOWN', # if resisted, the effect name is omitted in log
+             name='UNKNOWN_RESIST', # if resisted, the effect name is omitted in log
              tags=['Player', 'Debuff'])
 SimpleParser(P['debuff_expire'],
              tags=['Monster', 'Debuff Expire'])
@@ -239,20 +241,60 @@ SimpleParser(P['death'],
              name='Monster Death',
              tags=['Game'])
 
+
+# parsers that might encounter equips
+_quals= "Legendary Magnificent Exquisite Superior Peerless Average Crude Fair".split()
+def _maybe_equip(ctx, data):
+    if any(x in data['item'] for x in _quals):
+        data['equip']= data['item']
+        del data['item']
+
+        data['name']= 'Equip Drop'
+        data['tags']= ['Game', 'Drop']
+        return True
+    return False
+
+def _maybe_credits(ctx, data):
+    if 'Credits' in data['item']:
+        val= data['item'].split()[0] # 111 Credits --> 111
+        data['value']= int(val)
+        del data['item']
+
+        data['name']= 'Credit Drop'
+        data['tags']= ['Game', 'Drop']
+        return True
+    return False
+
+def _cred_eq(ctx, data):
+    if _maybe_equip(ctx, data):
+        return data
+    elif _maybe_credits(ctx, data):
+        return data
+    else:
+        return data
+
+# items -- could be equips, credits, or other items
+item= SimpleParser(P['drop'],
+                   name='Drop',
+                   tags=['Game', 'Drop'])
+item.process_data= _cred_eq
+
+# arena clear bonus -- should be equip
+SimpleParser(P['clear_bonus'],
+             name='Equip Drop',
+             tags=['Game', 'Drop']).add_proc(
+    key='item', fn=_maybe_equip
+)
+
+# other drops
+SimpleParser(P['gf_credits'],
+             name='Credits',
+             tags=['Game', 'Drop'])
 SimpleParser(P['gem'],
              name='Gem Drop',
              tags=['Game', 'Drop'])
-SimpleParser(P['credits'],
-             name='Credits',
-             tags=['Game', 'Drop'])
-SimpleParser(P['drop'],
-             name='Item Drop',
-             tags=['Game', 'Drop'])
 SimpleParser(P['event'],
              name='Event Drop',
-             tags=['Game', 'Drop'])
-SimpleParser(P['clear_bonus'],
-             name='Clear Bonus',
              tags=['Game', 'Drop'])
 SimpleParser(P['token_bonus'],
              name='Token Bonus',

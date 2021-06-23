@@ -1,14 +1,15 @@
 from persistent import Persistent
-from BTrees.IIBTree import IIBTree, BTree
+from BTrees.IOBTree import IOBTree, BTree
 from typing import Any, Dict, List, Callable
 from ..log import BattleLog, Event
+import time
 
 
 # maps each log to a value (possibly a list -- eg list of 'credits earned')
 class Extractor(Persistent):
-    def __init__(self, name):
-        self.name= name
-        self.values= IIBTree()  # results of map(log)
+    def __init__(self, name=None):
+        self.name= name or str(time.time()) # for debugging
+        self.values= IOBTree()  # results of map(log)
 
     def map(self, log):
         # type: (BattleLog) -> Any
@@ -20,72 +21,79 @@ class Extractor(Persistent):
             self.values[index]= self.map(log)
         return self.values[index]
 
+    def clear_cache(self):
+        import transaction
+        self.values= IOBTree()
+        transaction.commit()
+
+    @classmethod
+    def clear_all_caches(cls, node):
+        import transaction
+        for name,extr in node.items():
+            extr.clear_cache()
+        transaction.commit()
+
+
+
 # two-step extractor:
 #   (1) filters Log.primary_events for events of interest
-#   (2) applies a function to each event. the resulting list is returned
-class SimpleExtractor(Extractor):
-    def __init__(self, name, conds, value_fn):
+#   (2) extracts attributes from the filtered events
+class AttrExtractor(Extractor):
+    def __init__(self, name, conds, attrs):
         super().__init__(name=name)
         self.conds= conds
-        self.value_fn= value_fn # extracts a value from each event
+
+        # inner lists contain a "path of attr names"
+        #   eg ['a', 'b', 'c'] would be used to extract event['a']['b']['c']
+        self.attrs= attrs # type: dict[str, list[str]]
 
     def get_events(self, log):
         return log.search(**self.conds)
 
+    def get_attr_vals(self, event):
+        ret= {
+            "meta": dict(
+                round=event.round_index,
+                turn=event.turn_index,
+                id=event.event_index,
+            )
+        }
+        for name,lst in self.attrs.items():
+            tmp= event
+            for attr in lst:
+                try:
+                    tmp= tmp[attr]
+                except KeyError:
+                    break # @todo: failed attr retrieval logging
+                ret[name]= tmp
+        return ret
+
     def map(self, log):
         events= self.get_events(log)
-        values= [self.value_fn(e) for e in events]
+        values= [self.get_attr_vals(e) for e in events]
         values= [x for x in values if x is not None] # @todo: log the Nones
         return values
 
-# for user-defined extractors
-class CustomExtractor(SimpleExtractor):
-    def __init__(self, name, conds, attrs):
-        conds.setdefault('search_effects', True)
-        super().__init__(name, conds, self.get_value_fn(attrs))
 
-    # attrs should be a dict of lists,
-    # where the inner lists contain attr names (ie the value to be extracted from each event)
-    @classmethod
-    def get_value_fn(cls, attrs): # type: (Dict[List[str]]) -> Callable
-        def fn(e): # type: (Event) -> Any
-            ret= e
-            try:
-                for x in attrs:
-                    ret= ret[x]
-                return ret
-            except (AttributeError, KeyError):
-                return None
-        return fn
+def _data_extr(extr_name, event_name, **attrs):
+    for x,y in attrs.items():
+        # assume string values are intended to target the data attribute
+        if isinstance(y, str):
+            attrs[x]= ['data', y]
 
-
-
-def _data_extr(extr_name, event_name, data_keys):
-    if not isinstance(data_keys, dict):
-        fn= lambda e: e.data[data_keys]
-    else:
-        fn= lambda e: { x: e.data[y] for x,y in data_keys }
-
-    return SimpleExtractor(name=extr_name,
-                           conds=dict(name=event_name),
-                           value_fn=fn)
+    return AttrExtractor(name=extr_name,
+                         conds=dict(name=event_name),
+                         attrs=attrs)
 
 DEFAULT_EXTRACTORS= dict(
-    credits= _data_extr('Credits', 'Credits', 'val'),
-    exp= _data_extr('EXP', 'EXP Gain', 'val'),
-
+    exp= _data_extr('EXP', 'EXP Gain',
+                    value='value'),
     prof= _data_extr('Proficiency', 'Prof Gain',
-                     dict(value='value', type='type')),
+                     value='value', type='type'),
     monster= _data_extr('Monster Spawn', 'Monster Spawn',
-                        dict(mid='mid', name='monster')),
+                        mid='mid', name='monster'),
+    equips= _data_extr('Equip', 'Equip Drop',
+                       equip='equip'),
+    credits= _data_extr('Credits', 'Credit Drop',
+                        value='value'),
 )
-
-def _equip_fn(event):
-    quals= "Legendary Magnificent Exquisite Superior Peerless Average Fair Crude".split()
-    if any(x in event.data['item'] for x in quals):
-        return event.data['item']
-    else:
-        return None
-DEFAULT_EXTRACTORS['equip']= SimpleExtractor('Equip Drop',
-                                             '(?:Item Drop|Clear Bonus)',
-                                             value_fn=_equip_fn),

@@ -7,7 +7,7 @@ _num=    lambda name: _grp(name, r'\d+')
 _float=  lambda name: _grp(name, r'\d+(?:\.\d*)?')
 _resist= rf"(?: \((?P<resist>\d+)% resisted\))?"
 _words=  lambda name: _grp(name, r'[\w\s-]+')
-_enemy_spell= rf"{_words('monster')} (?P<spell_type>casts|uses) {_words('name')}"
+_enemy_spell= rf"{_words('monster')} (?P<spell_type>casts|uses) {_words('skill')}"
 _mult_type= lambda *args: _grp('multiplier_type', '|'.join(args))
 
 # @todo: melee
@@ -60,7 +60,7 @@ PATTERNS= dict(
     death= rf"{_words('monster')} has been defeated\.",
 
     gem= rf"{_words('monster')} drops a (?P<type>\w+) Gem powerup!",
-    credits= rf"You gain ({_num('value')}) Credits!",
+    gf_credits= rf"You gain ({_num('value')}) Credits!",
     drop= rf"{_words('monster')} dropped \[(?P<item>.*)\]",
     prof= rf"You gain {_float('value')} points of {_words('type')} proficiency\.",
     exp= rf"You gain {_num('value')} EXP!",
