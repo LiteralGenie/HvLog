@@ -15,7 +15,7 @@ import sys, datetime
 class BattleLog(Persistent):
     def __init__(self):
         self.primary_events= []   # type: List[Event]
-        self.start_time= None
+        self.start= None
 
         self.round_end= -1
         self.round_max= -1
@@ -37,7 +37,7 @@ class BattleLog(Persistent):
                     raise e
 
         events= Enumerator.enumerate(events)
-        events= EventLinker.set_links(events)
+        events= EventLinker.link(events)
 
         primary_events= [x for x in events if x.source is None]
         # if persistify:
@@ -104,7 +104,7 @@ class BattleLog(Persistent):
     def as_dict(self, recurse=True):
         ret= dict(
             primary_events= [x.as_dict() for x in self.primary_events] if recurse else [],
-            start_time=self.start_time,
+            start=self.start,
             round_end= self.round_end,
             round_max= self.round_max,
             battle_type= self.battle_type,
@@ -112,8 +112,17 @@ class BattleLog(Persistent):
 
         return ret
 
+    @property
+    def summary(self):
+        return dict(
+            start=self.start,
+            round_end= self.round_end,
+            round_max= self.round_max,
+            battle_type= self.battle_type,
+        )
+
     def __str__(self):
-        date= datetime.datetime.fromtimestamp(self.start_time)
+        date= datetime.datetime.fromtimestamp(self.start)
         date= date.strftime("%b-%d %H:%M")
         return f"[{date}] {self.battle_type} ({self.round_end} / {self.round_max})"
 

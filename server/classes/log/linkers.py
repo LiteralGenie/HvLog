@@ -30,7 +30,7 @@ class EventLinker:
 
     # create instance from text
     @classmethod
-    def set_links(cls, events):
+    def link(cls, events):
         current_sources= OrderedDict()
         t_ind= None
         e_ind= 0

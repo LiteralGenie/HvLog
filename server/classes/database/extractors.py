@@ -5,21 +5,33 @@ from ..log import BattleLog, Event
 import time
 
 
-# maps each log to a value (possibly a list -- eg list of 'credits earned')
-class Extractor(Persistent):
+class CachedExtractor(type):
+    def __new__(cls, name, bases, attr):
+        attr['extract']=  cls.cache(attr['extract'])
+        return super().__new__(cls, name, bases, attr)
+
+    @staticmethod
+    def cache(extract_fn):
+        def wrapper(self, log, **kwargs):
+            import transaction
+
+            start= log.start
+            if start not in self.values:
+                self.values[start]= extract_fn(self, log, **kwargs)
+                transaction.commit()
+
+            return self.values[start]
+        return wrapper
+
+# summarizes log (eg converts log to list of credits earned)
+class Extractor(Persistent, metaclass=CachedExtractor):
     def __init__(self, name=None):
         self.name= name or str(time.time()) # for debugging
-        self.values= IOBTree()  # results of map(log)
-
-    def map(self, log):
-        # type: (BattleLog) -> Any
-        raise NotImplementedError
+        self.values= IOBTree()
 
     def extract(self, log):
-        index= log.start_time
-        if not self.values.has_key(index):
-            self.values[index]= self.map(log)
-        return self.values[index]
+        # type: (BattleLog) -> Any
+        raise NotImplementedError
 
     def clear_cache(self):
         import transaction
@@ -32,7 +44,6 @@ class Extractor(Persistent):
         for name,extr in node.items():
             extr.clear_cache()
         transaction.commit()
-
 
 
 # two-step extractor:
@@ -48,6 +59,7 @@ class AttrExtractor(Extractor):
         self.attrs= attrs # type: dict[str, list[str]]
 
     def get_events(self, log):
+        # type: (BattleLog) -> List[Event]
         return log.search(**self.conds)
 
     def get_attr_vals(self, event):
@@ -55,7 +67,7 @@ class AttrExtractor(Extractor):
             "meta": dict(
                 round=event.round_index,
                 turn=event.turn_index,
-                id=event.event_index,
+                event=event.event_index,
             )
         }
         for name,lst in self.attrs.items():
@@ -68,11 +80,12 @@ class AttrExtractor(Extractor):
                 ret[name]= tmp
         return ret
 
-    def map(self, log):
+    def extract(self, log):
         events= self.get_events(log)
         values= [self.get_attr_vals(e) for e in events]
         values= [x for x in values if x is not None] # @todo: log the Nones
         return values
+
 
 
 def _data_extr(extr_name, event_name, **attrs):

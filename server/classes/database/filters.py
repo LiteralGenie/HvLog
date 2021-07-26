@@ -1,3 +1,5 @@
+# @todo: MOVE TO CLIENT
+
 from typing import List
 from persistent import Persistent
 from BTrees.IOBTree import IOBTree, BTree
@@ -5,7 +7,7 @@ from ..log import BattleLog
 import re, time
 
 
-# filters a list of logs based on some log value (possibly based on Index) @todo
+# filters a list of logs based on some log value (possibly based on Index)
 # results are cached and then updated if new logs exist when filter is applied
 class Filter(Persistent):
     def __init__(self, name=None):
@@ -20,7 +22,7 @@ class Filter(Persistent):
 
         for l in logs:
             # add to cache if not exists
-            st= l.start_time
+            st= l.start
             if st not in self.log_lst:
                 self.log_lst[st]= self.filter(l)
 
@@ -85,12 +87,12 @@ class CompletedFilter(Filter):
         return 0 == (log.round_end - log.round_max)
 
 class StartFilter(RangeFilter):
-    def __init__(self, start_time, **kwargs):
+    def __init__(self, start, **kwargs):
         super().__init__(**kwargs)
-        self.start_time= start_time
+        self.start= start
 
     def get_val(self, log):
-        return log.start_time
+        return log.start
 
 class AggregateFilter(Filter):
     def __init__(self, filters, **kwargs):

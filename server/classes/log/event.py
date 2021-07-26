@@ -16,8 +16,10 @@ class Event:
         self.source= source
         self.effects :List[Event] = []
 
+        # indices assigned by Enumerator
         self.turn_index= -1
         self.round_index= -1
+        self.event_index= -1
 
         self.name= name
         self.data= data

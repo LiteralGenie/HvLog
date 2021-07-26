@@ -1,2 +1,2 @@
-from .test_handlers import *
+from classes.server.handlers.test_handlers import *
 from .server import Server
