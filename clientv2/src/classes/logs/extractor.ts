@@ -1,6 +1,6 @@
 import { request_extract } from "@/utils/request_utils"
-import { LogList } from "./log_list"
 import { sum_lst, zip_dicts } from "@/utils/misc_utils"
+import { LogList } from "@/services/list.service"
 
 
 // mostly a cache for server response

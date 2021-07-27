@@ -10,7 +10,7 @@ export abstract class Manager {
 
     // opts is an object whose keys are FilterCategory ids and whose values are Filter ids
     // returns list of matching filters
-    get_filters(opts: FilterOptions): Array<BaseFilter> {
+    get_filters(opts: FilterOptionsData): Array<BaseFilter> {
         let filters = Array<BaseFilter>()
 
         Object.entries(opts).map( ([name,ids]) => {
@@ -25,7 +25,12 @@ export abstract class Manager {
     // intersection of cached filter values
     get_intersection(lst: Array<BaseFilter>) {
         let set = new Set<number>()
-        lst.forEach()
+
+        lst.forEach(ftr => {
+            ftr.index.forEach(id => set.add(id))
+        })
+
+        return set
     }
 
     get cats() {

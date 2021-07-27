@@ -1,10 +1,9 @@
 import { Observable, Subject, timer } from "rxjs";
-import { BSTree } from "typescript-collections";
 
 
 // subset of numeric ids from whatever source
 export abstract class BaseFilter {
-    index = new BSTree<number>() // (unconfirmed) better than object for finding ranges
+    index = new Set<number>() // (unconfirmed) better than object for finding ranges
     on_add$ = new Subject<SourceData>() // notify of new data
     on_remove$ = new Subject<SourceData>()
 
@@ -39,7 +38,7 @@ export abstract class BaseFilter {
         let expiry = this.get_expiration(data)
         if(expiry) {
             timer(expiry).subscribe(_ => {
-                this.index.remove(data.id)
+                this.index.delete(data.id)
                 this.on_remove$.next(data)
             })
         }

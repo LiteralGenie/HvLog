@@ -13,17 +13,3 @@ export class MonthFilter extends FilterGroupMember<number> {
         return new Date(data.start*1000).getUTCMonth()
     }
 }
-
-@Injectable({
-    providedIn: 'root'
-})
-export class MonthOf extends FilterGroup<number> {
-    filters: {[id:number]: MonthFilter}
-
-    constructor(list: LogList) {
-        super()
-        this.filters = [...Array(12).keys()].map(
-            i => new MonthFilter(i, this.info_cache, list.subject$)
-        )
-    }
-}
