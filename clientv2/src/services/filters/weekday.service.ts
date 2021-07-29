@@ -1,26 +1,43 @@
 import { FilterGroup } from "@/classes/logs/filters/group"
 import { FilterCategory } from "@/classes/logs/filters/manager"
-import { WeekdayFilter } from "@/classes/logs/filters/weekday"
-import { LogList, SummaryData } from "@/services/list.service"
+import { PropertyFilter } from "@/classes/logs/filters/property"
+import { LogList } from "@/services/list.service"
+import { join_and } from "@/utils/observable_utils"
 import { Injectable } from "@angular/core"
+import { merge } from "rxjs"
 
 
 @Injectable({
     providedIn: 'root'
 })
-export class WeekdayOf extends FilterGroup<number> implements FilterCategory {
-    id = "Weekday"
-    filters: {[id:number]: WeekdayFilter}
+export class WeekdayOf implements FilterCategory {
+    filters: {[id:number]: PropertyFilter}
     names_short = "Sun Mon Tue Wed Thu Fri Sat".split(" ")
 
     constructor(list: LogList) {
-        super()
         this.filters = [...Array(7).keys()].map(
-            i => new WeekdayFilter(i, this.info_cache, list.subject$)
+            i => new PropertyFilter("weekday", x => x === i, list.subject$)
         )
     }
 
-    to_name(id: number) {
+    get_add$(ids: number[]) { 
+        let adds = ids.map(id => {
+            return this.filters[id].on_add$
+        })
+
+        return join_and(adds)
+    }
+
+    get_remove$(ids: number[]) { 
+        let rems = ids.map(id => {
+            return this.filters[id].on_remove$
+        })
+
+        return merge(...rems)
+    }
+
+
+    get_name(id: number) {
         return this.names_short[id]
     }
 }

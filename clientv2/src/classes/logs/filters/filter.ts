@@ -9,7 +9,7 @@ export abstract class BaseFilter {
 
     // listen for new source values (which must contain at least an id property)
     constructor(private target: Observable<SourceData>) {
-        this.target.subscribe(this.process)
+        this.target.subscribe(this.process.bind(this))
     }
     
     // process source emissions

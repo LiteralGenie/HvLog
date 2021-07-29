@@ -18,7 +18,7 @@ def logs(db):
             logs= db.root['logs'] # type: IOBTree
             summaries= [l.summary for l in logs.values(min=start)]
 
-            resp= { str(s['start']): s for s in summaries }
+            resp= { "logs": summaries }
             self.write(resp)
 
     return TestRequest

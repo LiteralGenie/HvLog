@@ -1,76 +1,54 @@
-
-import { Observable } from "rxjs";
-import { BaseFilter } from "./filter";
+import { join_and } from "@/utils/observable_utils";
+import { merge, Observable } from "rxjs";
+import { distinct } from "rxjs/operators";
+import { BaseFilter, SourceData } from "./filter";
 
 
 // facilitates interaction of components and (categories of) filters
-// adds caching and allows subscription to single observable for whatever filter combo
-export abstract class Manager {
+// allows subscription to single observable for whatever filter combo
+export abstract class FilterManager {
     categories: {[cat:string]: FilterCategory} = {}
 
-    // opts is an object whose keys are FilterCategory ids and whose values are Filter ids
-    // returns list of matching filters
-    get_filters(opts: FilterOptionsData): Array<BaseFilter> {
-        let filters = Array<BaseFilter>()
-
-        Object.entries(opts).map( ([name,ids]) => {
-            filters.concat(ids.map(id => {
-                return this.categories[name].filters[id]
-            }))
+    // returns observable for new logs
+    get_add$(opts: FilterOptions): Observable<SourceData> {
+        // get emitters
+        let adds = new Array<Observable<SourceData>>()
+        Object.entries(opts).forEach(([name, arg]) => {
+            let cat = this.categories[name]
+            adds.push(cat.get_add$(arg))
         })
 
-        return filters
+        // filter for logs that pass all filters
+        return join_and(adds)
     }
 
-    // intersection of cached filter values
-    get_intersection(lst: Array<BaseFilter>) {
-        let set = new Set<number>()
-
-        lst.forEach(ftr => {
-            ftr.index.forEach(id => set.add(id))
+    // returns observable for log removals
+    get_remove$(opts: FilterOptions): Observable<SourceData> {
+        // get emitters
+        let removes = new Array<Observable<SourceData>>()
+        Object.entries(opts).forEach(([name, arg]) => {
+            let cat = this.categories[name]
+            removes.push(cat.get_add$(arg))
         })
 
-        return set
-    }
+        // emit logs that are removed from any filter
+        let on_remove$ = merge(...removes).pipe(distinct())
 
-    get cats() {
-        return Object.keys(this.categories)
-    }
-}
- 
-export interface FilterOptionsData {
-    [cat:string]: Array<number>
-}
-
-export class FilterOptions {
-    constructor(public opts: FilterOptionsData) {
-        // sort obj props
-        this.opts = Object.fromEntries(Object.entries(this.opts).sort())
-
-        // sort id lists
-        Object.entries(this.opts).forEach( ([name,id_lst]) => {
-            id_lst.sort()
-        })
-    }
-
-    // concatenate 
-    get hash() {
-        let cats = []
-        Object.entries(this.opts).forEach( ([name,id_lst]) => {
-            if(!id_lst.length) return
-
-            let ids = id_lst.map(x => String(x))
-                            .join("-")
-            cats.push(`${name}_${ids}`)
-        })
-
-        return 
+        // return
+        return on_remove$
     }
 }
 
-export interface FilterCategory {
-    id: string
 
-    filters: {[id:number]: BaseFilter}
-    to_name(id: number): string
+// keys are FilterCategory ids, values are arguments to that category
+export interface FilterOptions {
+    [cat:string]: any
+}
+
+export abstract class FilterCategory {
+    filters: {[id:number]: BaseFilter} | {[id:string]: BaseFilter} = {}
+    get_name(id: any) { return "" }
+
+    abstract get_add$(x: any): Observable<SourceData>
+    abstract get_remove$(x: any): Observable<SourceData>
 }

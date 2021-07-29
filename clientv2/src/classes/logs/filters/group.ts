@@ -1,5 +1,5 @@
-import { SummaryData } from "@/services/list.service"
 import { Observable } from "rxjs"
+import { SummaryData } from "../summary_data"
 import { BaseFilter } from "./filter"
 
 

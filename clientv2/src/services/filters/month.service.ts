@@ -1,26 +1,42 @@
 import { FilterGroup } from "@/classes/logs/filters/group"
 import { FilterCategory } from "@/classes/logs/filters/manager"
-import { MonthFilter } from "@/classes/logs/filters/month"
-import { LogList, SummaryData } from "@/services/list.service"
+import { PropertyFilter } from "@/classes/logs/filters/property"
+import { LogList } from "@/services/list.service"
+import { join_and } from "@/utils/observable_utils"
 import { Injectable } from "@angular/core"
+import { merge } from "rxjs"
 
 
 @Injectable({
     providedIn: 'root'
 })
-export class MonthOf extends FilterGroup<number> implements FilterCategory {
-    id = "Month"
-    filters: {[id:number]: MonthFilter}
+export class MonthOf implements FilterCategory {
+    filters: {[id:number]: PropertyFilter}
     names_short = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ")
 
     constructor(list: LogList) {
-        super()
         this.filters = [...Array(12).keys()].map(
-            i => new MonthFilter(i, this.info_cache, list.subject$)
+            i => new PropertyFilter("month", x => x === i, list.subject$)
         )
     }
 
-    to_name(id: number) {
+    get_add$(ids: number[]) { 
+        let adds = ids.map(id => {
+            return this.filters[id].on_add$
+        })
+
+        return join_and(adds)
+    }
+
+    get_remove$(ids: number[]) { 
+        let rems = ids.map(id => {
+            return this.filters[id].on_remove$
+        })
+
+        return merge(...rems)
+    }
+
+    get_name(id: number) {
         return this.names_short[id]
     }
 }

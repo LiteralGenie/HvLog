@@ -1,8 +1,9 @@
 import ENV from "@env"
 import { from, Observable, ReplaySubject, Subject } from "rxjs"
-import { tap, switchMap } from 'rxjs/operators'
+import { tap, switchMap, map } from 'rxjs/operators'
 import { Injectable } from "@angular/core"
 import { HttpClient } from "@angular/common/http"
+import { SummaryData, SummaryResponse } from "@/classes/logs/summary_data"
 
 
 @Injectable({
@@ -25,40 +26,32 @@ export class LogList {
 
         // request
         return this._fetch(params).pipe( 
-            // unravel and emit the response
+            // unravel
             switchMap(lst => {
-                return from(lst.map(summ => {
-                    // add id
-                    return { 
-                        ...summ, 
-                        id: summ.start 
-                    }
-                }))
+                return from(lst)
             }),
 
-            // cache each emit
+            // cache
             tap(summ => {
                 this.summaries[summ.id] = summ
             }),
 
-            // subject emit
+            // emit
             tap(summ => this.subject$.next(summ))
         )
     }
 
     _fetch(params: {}) {
         let target = `${ENV.server}/test/logs`
-        return this.http_client.get(target, { params }) as Observable<SummaryResponse[]>
+        let resp = this.http_client.get<any>(target, { params }).pipe(
+            // json to objects
+            map(resp => resp.logs.map(
+                (x: SummaryResponse) => {
+                    return new SummaryData(x.start, x.round_end, x.round_max, x.battle_type)
+                }
+            ))
+        )
+        return resp as Observable<SummaryData[]>
     }
 }
 
-export interface SummaryResponse {
-    start: number // seconds
-    round_end: number
-    round_max: number
-    battle_type: string
-}
-
-export interface SummaryData extends SummaryResponse {
-    id: number
-}

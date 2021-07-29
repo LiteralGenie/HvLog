@@ -8,17 +8,17 @@ import { FilterCategory } from "@/classes/logs/filters/manager"
 @Injectable({
     providedIn: 'root'
 })
-export class AgeOf implements FilterCategory {
-    id = "Age"
-    filters: {[id:number]: AgeFilter}
+export class AgeOf extends FilterCategory {
+    filters: {[id:number]: AgeFilter} = {}
 
     constructor(list: LogList) {
-        this.filters = ENV.recency_periods.map(n => {
-            return new AgeFilter(n, list.subject$)
+        super()
+        ENV.recency_periods.forEach(n => {
+            this.filters[n] = new AgeFilter(n, list.subject$)
         })
     }
 
-    to_name(id: number) {
-        return `age_${Math.trunc(id)}`
-    }
+    get_add$(id: number) { return this.filters[id].on_add$ }
+    get_remove$(id: number) { return this.filters[id].on_remove$ }
+    get_name(id: number) { return `age_${Math.trunc(id)}` }
 }

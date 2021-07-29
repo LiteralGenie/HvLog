@@ -1,6 +1,7 @@
 import { Observable } from "rxjs";
-import { LogList, SummaryData } from "@/services/list.service";
+import { LogList } from "@/services/list.service";
 import { BaseFilter, SourceData } from "./filter";
+import { SummaryData } from "../summary_data";
 
 
 export class AgeFilter extends BaseFilter {
@@ -16,7 +17,7 @@ export class AgeFilter extends BaseFilter {
     // if age is <= 0, always return true
     filter(data: SummaryData) {
         if(this.age_ms > 0) {
-            let elapsed = Date.now() - data.start
+            let elapsed = Date.now() - data.start*1000
             return elapsed <= this.age_ms
         } else {
             return true
