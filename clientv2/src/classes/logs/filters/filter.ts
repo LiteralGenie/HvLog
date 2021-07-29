@@ -1,11 +1,11 @@
-import { Observable, Subject, timer } from "rxjs";
+import { Observable, ReplaySubject, Subject, timer } from "rxjs";
 
 
 // subset of numeric ids from whatever source
 export abstract class BaseFilter {
-    index = new Set<number>() // (unconfirmed) better than object for finding ranges
-    on_add$ = new Subject<SourceData>() // notify of new data
-    on_remove$ = new Subject<SourceData>()
+    index = new Set<number>()
+    on_add$ = new ReplaySubject<SourceData>() // notify of new data
+    on_remove$ = new ReplaySubject<SourceData>()
 
     // listen for new source values (which must contain at least an id property)
     constructor(private target: Observable<SourceData>) {

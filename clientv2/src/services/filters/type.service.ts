@@ -1,6 +1,7 @@
 import { SourceData } from "@/classes/logs/filters/filter";
 import { FilterCategory } from "@/classes/logs/filters/manager";
 import { PropertyFilter } from "@/classes/logs/filters/property";
+import { TypeFilter } from "@/classes/logs/filters/type";
 import { SummaryData } from "@/classes/logs/summary_data";
 import { join_and } from "@/utils/observable_utils";
 import { Injectable } from "@angular/core";
@@ -14,7 +15,7 @@ import { LogList } from "../list.service";
 })
 export class TypeOf extends FilterCategory {    
     types = new Set<string>()
-    watchers: {[exp: string]: ReplaySubject<SummaryData>} = {}
+    filters: {[exp: string]: TypeFilter} = {}
 
     constructor(private list: LogList) {
         super()
@@ -23,25 +24,20 @@ export class TypeOf extends FilterCategory {
         )
     }
 
-    // create watcher for a regexp from existing types
-    create_watcher(exp: string) {        
-        return this.list.subject$.pipe(
-            filter(data => Boolean(data.battle_type.match(exp)))
-        )
+    // dynamically create filter
+    get_filter(exp: string) {
+        this.filters[exp] = this.filters[exp] || new TypeFilter(exp, this.list.subject$)
+        return this.filters[exp]
     }
 
     get_add$(exps: string[]) {
-        let adds = exps.map(exp => {
-            // get watcher
-            this.watchers[exp] = this.watchers[exp] || this.create_watcher(exp)
-            return this.watchers[exp]
-        })
-
+        let adds = exps.map(exp => this.get_filter(exp).on_add$)
         return join_and(adds)
     }
 
-    // battle_type will never change
-    get_remove$() {
-        return of() as Observable<SourceData>
+    // battle_type will never change but whatever
+    get_remove$(exps: string[]) {
+        let rems = exps.map(exp => this.get_filter(exp).on_remove$)
+        return join_and(rems)
     }
 }

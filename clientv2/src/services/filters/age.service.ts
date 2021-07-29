@@ -1,7 +1,6 @@
 import { AgeFilter } from "@/classes/logs/filters/age"
 import { Injectable } from "@angular/core"
 import { LogList } from "../list.service"
-import ENV from "@env"
 import { FilterCategory } from "@/classes/logs/filters/manager"
 
 
@@ -11,14 +10,18 @@ import { FilterCategory } from "@/classes/logs/filters/manager"
 export class AgeOf extends FilterCategory {
     filters: {[id:number]: AgeFilter} = {}
 
-    constructor(list: LogList) {
+    constructor(private list: LogList) {
         super()
-        ENV.recency_periods.forEach(n => {
-            this.filters[n] = new AgeFilter(n, list.subject$)
-        })
     }
 
-    get_add$(id: number) { return this.filters[id].on_add$ }
-    get_remove$(id: number) { return this.filters[id].on_remove$ }
+    // dynamically create filter
+    get_filter(id: number)  {
+        this.filters[id] = this.filters[id] || new AgeFilter(id, this.list.subject$)
+        return this.filters[id]
+    }
+
+    get_add$(id: number) { return this.get_filter(id).on_add$ }
+    get_remove$(id: number) { return this.get_filter(id).on_remove$ }
+
     get_name(id: number) { return `age_${Math.trunc(id)}` }
 }
