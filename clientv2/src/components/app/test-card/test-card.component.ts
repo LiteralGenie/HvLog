@@ -18,6 +18,7 @@ export class TestCardComponent implements OnInit {
     private mgr: Manager
   ) {
     this.filter_opts = {}
+    this.filter_opts[Manager.cats.DAY] = [0]
     this.filter_opts[Manager.cats.AGE] = [30]
     this.filter_opts[Manager.cats.TYPE] = ["Grindfest"]
   }

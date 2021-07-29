@@ -1,12 +1,7 @@
-import { SourceData } from "@/classes/logs/filters/filter";
 import { FilterCategory } from "@/classes/logs/filters/manager";
-import { PropertyFilter } from "@/classes/logs/filters/property";
 import { TypeFilter } from "@/classes/logs/filters/type";
-import { SummaryData } from "@/classes/logs/summary_data";
 import { join_and } from "@/utils/observable_utils";
 import { Injectable } from "@angular/core";
-import { Observable, of, ReplaySubject } from "rxjs";
-import { filter, tap } from "rxjs/operators";
 import { LogList } from "../list.service";
 
 
