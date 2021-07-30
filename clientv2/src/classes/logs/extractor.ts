@@ -1,22 +1,45 @@
-import { request_extract } from "@/utils/request_utils"
 import { sum_lst, zip_dicts } from "@/utils/misc_utils"
-import { LogList } from "@/services/list.service"
+import { HttpClient } from "@angular/common/http"
+import { iif, merge, Observable, of } from "rxjs"
+import ENV from "@env"
+import { catchError, tap } from "rxjs/operators"
 
 
 // mostly a cache for server response
 export abstract class BaseExtractor {
     cache: { [log_id: number]: any } = {}
-    name: string = ""
 
-    constructor(public id: string) { }
+    constructor(
+        public id: string,
+        private http: HttpClient,
+    ) {}
 
-    async get_log(log_id: number): Promise<any> {
-        if(!this.cache[log_id]) {
-            const response = await request_extract(log_id, [this.id])
-            this.cache[log_id] = this.handle_response(response[this.id])
-        }
-        
-        return this.cache[log_id]
+    // retrieve and cache data
+    get_logs(log_ids: number[]): Observable<any> {
+        return merge(...log_ids.map(id => {
+            console.log('id', id)
+            // if not cached, fetch
+            if(!this.cache[id]) {
+                return this._get_log(id).pipe(
+                    tap(resp => this.cache[id] = this.handle_response(resp[this.id]))
+                )
+            // elif cached, get from cache
+            } else {
+                return of(this.cache[id]).pipe(tap(_=>console.log('cache', id, this.cache[id])),)
+            }
+        }))
+    }
+
+    // retrieve data
+    _get_log(log_id: number): Observable<any> {
+        const target = `${ENV.server}/test/extract`
+        const params = {log_id, extractors: JSON.stringify([this.id])}
+        console.log('fetching', target, params)
+
+        return this.http.get(target, {params}).pipe(
+            catchError(err => of(console.error('fetch error', err))),
+            tap(data => console.log(target, params, data))
+        )
     }
 
     abstract handle_response(resp: any): any
@@ -24,9 +47,10 @@ export abstract class BaseExtractor {
 
 
 export class AttributeExtractor extends BaseExtractor {
-    cache: { [log_id: number]: LogAttributes } = {}
+    cache: {[log_id: number]: LogAttributes} = {}
 
     handle_response(resp: Array<DataInterface>) {
+        console.log('handling', resp)
         return new LogAttributes(resp)
     }
 }
@@ -70,23 +94,14 @@ interface DataInterface {
 }
 
 
-// collection of BaseExtractors that watch for changes to a LogList
-export class ExtractorGroup {
-    log_list: LogList
-    extractors: { [name: string]: BaseExtractor }
-    cache: { [name: string]: any } = {} // list of logs checked for each extractor
+// facilitates extractor requests by creating extractors on-demand
+export abstract class ExtractorGroup {
+    extractors: { [name: string]: BaseExtractor } = {}
 
-    constructor(log_list: LogList) {
-        this.log_list = log_list
-        this.extractors = {}
+    extract(log_ids: number[], extractor: string) {
+        let extr = this.get_extractor(extractor)
+        return extr.get_logs(log_ids)
     }
 
-    extract(extractor: string, filters: any) {
-        let extr = this.extractors[extractor]
-        
-    }
-
-    _extract() {
-
-    }
+    abstract get_extractor(name: string): BaseExtractor
 }

@@ -1,5 +1,4 @@
 import { Observable } from "rxjs";
-import { LogList } from "@/services/list.service";
 import { BaseFilter, SourceData } from "./filter";
 import { SummaryData } from "../summary_data";
 

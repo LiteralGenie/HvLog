@@ -27,11 +27,18 @@ class LogDB:
     def set_defaults(self, force=False):
         from classes.database import DEFAULT_EXTRACTORS
 
+        # clear
+        if force:
+            self.root['extractors'] = {}
+
+        # set defaults
         dct= self.root.setdefault('extractors',{})
         for x,y in DEFAULT_EXTRACTORS.items():
             if x not in dct or force:
                 print('adding extractor:', x,y)
                 dct[x]= y
+
+        transaction.commit()
 
     def clear(self, logs=False, caches=False, to_defaults=False):
         from classes.database import Extractor

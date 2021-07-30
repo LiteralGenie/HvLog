@@ -6,7 +6,7 @@ import { BaseFilter, SourceData } from "./filter";
 
 // facilitates interaction of components and (categories of) filters
 // allows subscription to single observable for whatever filter combo
-export abstract class FilterManager {
+export abstract class BaseFilterManager {
     categories: {[cat:string]: FilterCategory} = {}
 
     // returns observable for new logs
@@ -47,7 +47,7 @@ export interface FilterOptions {
 
 export abstract class FilterCategory {
     filters: {[id:number]: BaseFilter} | {[id:string]: BaseFilter} = {}
-    get_name(id: any) { return "" }
+    get_name(id: any) { return String(id) }
 
     abstract get_add$(x: any): Observable<SourceData>
     abstract get_remove$(x: any): Observable<SourceData>

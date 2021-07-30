@@ -103,7 +103,7 @@ DEFAULT_EXTRACTORS= dict(
                     value='value'),
     prof= _data_extr('Proficiency', 'Prof Gain',
                      value='value', type='type'),
-    monster= _data_extr('Monster Spawn', 'Monster Spawn',
+    monsters= _data_extr('Monster Spawn', 'Monster Spawn',
                         mid='mid', name='monster'),
     equips= _data_extr('Equip', 'Equip Drop',
                        equip='equip'),
